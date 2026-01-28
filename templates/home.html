@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · Household{% endblock %}
+{% block content %}
+<section class="grid gap-6 lg:grid-cols-3">
+    <article class="lg:col-span-2 card bg-base-100 shadow">
+        <div class="card-body">
+            <h2 class="card-title">Welcome</h2>
+            <p class="text-base-content/80">Use the navigation to manage your household data. This dashboard demonstrates HTMX-powered interactions with Tailwind and DaisyUI styling.</p>
+            <div class="divider">HTMX Demo</div>
+            {% include "includes/server_time.html" with current_time="" %}
+        </div>
+    </article>
+    <aside class="card bg-base-100 shadow">
+        <div class="card-body">
+            <h2 class="card-title">Quick Links</h2>
+            <ul class="menu menu-sm">
+                <li><a href="https://docs.djangoproject.com/en/stable/" target="_blank" rel="noreferrer">Django Docs</a></li>
+                <li><a href="https://django-tailwind.readthedocs.io/" target="_blank" rel="noreferrer">Tailwind for Django</a></li>
+                <li><a href="https://daisyui.com/" target="_blank" rel="noreferrer">DaisyUI Components</a></li>
+                <li><a href="https://htmx.org/docs/" target="_blank" rel="noreferrer">HTMX Guides</a></li>
+            </ul>
+        </div>
+    </aside>
+</section>
+{% endblock %}

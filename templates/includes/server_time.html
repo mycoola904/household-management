@@ -1,0 +1,8 @@
+<div class="flex flex-wrap items-center gap-3" id="time-container">
+    <button class="btn btn-primary" hx-get="{% url 'server-time' %}" hx-target="#time-container" hx-swap="outerHTML">Refresh Server Time</button>
+    {% if current_time %}
+        <div class="badge badge-success">{{ current_time }}</div>
+    {% else %}
+        <div class="badge badge-outline">No time fetched yet</div>
+    {% endif %}
+</div>
