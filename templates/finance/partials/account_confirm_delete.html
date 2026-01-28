@@ -1,0 +1,9 @@
+<form hx-post="{{ action }}" hx-target="#modal-body" hx-swap="innerHTML" class="space-y-4">
+    {% csrf_token %}
+    <h2 class="text-xl font-semibold">Delete Account</h2>
+    <p>Are you sure you want to delete <span class="font-semibold">{{ account.name }}</span>? This action cannot be undone.</p>
+    <div class="modal-action">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('account-modal').close(); document.getElementById('modal-body').innerHTML='';">Cancel</button>
+        <button type="submit" class="btn btn-error">Delete</button>
+    </div>
+</form>

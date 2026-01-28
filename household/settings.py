@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-2o6*)_nfaz=%u(9p%-gbb2+1s7b)m*l)#^dd#&kq@i$lec-u0l
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["127.0.0.1", "localhost", "testserver"]
 
 
 # Application definition
@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
     'django_htmx',
     'tailwind',
     'theme',
