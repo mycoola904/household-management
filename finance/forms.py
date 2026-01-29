@@ -96,6 +96,15 @@ class AccountForm(forms.ModelForm):
 
 
 class TransactionForm(forms.ModelForm):
+    CREDIT_ACCOUNT_TYPES = {
+        Account.AccountType.CREDIT_CARD,
+        Account.AccountType.LOAN,
+    }
+    CREDIT_ALLOWED_TRANSACTION_TYPES = {
+        Transaction.TransactionType.PAYMENT,
+        Transaction.TransactionType.CHARGE,
+    }
+
     class Meta:
         model = Transaction
         fields = (
@@ -118,6 +127,7 @@ class TransactionForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         _apply_tailwind_classes(self)
         self.fields["amount"].widget.attrs.update({"step": "0.01", "min": "0"})
+        self._limit_transaction_type_choices()
 
         posted_at = self.initial.get("posted_at") or (
             self.instance.posted_at if self.instance.pk else timezone.now()
@@ -125,8 +135,49 @@ class TransactionForm(forms.ModelForm):
         if posted_at:
             self.initial["posted_at"] = posted_at.strftime("%Y-%m-%dT%H:%M")
 
+    def _limit_transaction_type_choices(self):
+        field = self.fields["transaction_type"]
+        account = self._infer_account_for_type_limit()
+        if account and account.account_type in self.CREDIT_ACCOUNT_TYPES:
+            field.choices = [
+                choice
+                for choice in Transaction.TransactionType.choices
+                if choice[0] in self.CREDIT_ALLOWED_TRANSACTION_TYPES
+            ]
+        else:
+            field.choices = list(Transaction.TransactionType.choices)
+
+    def _infer_account_for_type_limit(self):
+        if self.instance.pk and self.instance.account_id:
+            return self.instance.account
+        if "account" in self.initial:
+            initial_value = self.initial["account"]
+            if isinstance(initial_value, Account):
+                return initial_value
+            return Account.objects.filter(pk=initial_value).first()
+        bound_value = self.data.get(self.add_prefix("account")) if self.data else None
+        if bound_value:
+            return Account.objects.filter(pk=bound_value).first()
+        return None
+
     def clean_amount(self):
         amount = self.cleaned_data.get("amount")
         if amount is not None and amount <= 0:
             raise forms.ValidationError("Amount must be greater than zero.")
         return amount
+
+    def clean(self):
+        cleaned_data = super().clean()
+        account = cleaned_data.get("account")
+        transaction_type = cleaned_data.get("transaction_type")
+        if (
+            account
+            and account.account_type in self.CREDIT_ACCOUNT_TYPES
+            and transaction_type
+            and transaction_type not in self.CREDIT_ALLOWED_TRANSACTION_TYPES
+        ):
+            self.add_error(
+                "transaction_type",
+                "Credit card and loan accounts support only Payment or Charge transactions.",
+            )
+        return cleaned_data
