@@ -1,0 +1,47 @@
+{% load humanize %}
+<div id="account-transactions" class="space-y-4">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+            <p class="text-xs uppercase text-base-content/60">Month</p>
+            <h3 class="text-2xl font-semibold">{{ month_label }}</h3>
+        </div>
+        <div class="flex gap-2">
+            <button class="btn btn-sm"
+                    hx-get="{{ transactions_url }}?month={{ prev_month }}"
+                    hx-target="#account-transactions"
+                    hx-swap="outerHTML">
+                ← Previous
+            </button>
+            <button class="btn btn-sm"
+                    hx-get="{{ transactions_url }}?month={{ current_month }}"
+                    hx-target="#account-transactions"
+                    hx-swap="outerHTML">
+                Current
+            </button>
+            <button class="btn btn-sm"
+                    hx-get="{{ transactions_url }}?month={{ next_month }}"
+                    hx-target="#account-transactions"
+                    hx-swap="outerHTML">
+                Next →
+            </button>
+        </div>
+    </div>
+    <div class="overflow-x-auto bg-base-100 rounded-box shadow">
+        <table class="table table-zebra">
+            <thead>
+                <tr class="text-sm uppercase text-base-content/70">
+                    <th>Date</th>
+                    <th>Account</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th class="text-right">Amount</th>
+                    <th>Status</th>
+                    <th class="text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% include "finance/partials/transaction_rows.html" %}
+            </tbody>
+        </table>
+    </div>
+</div>

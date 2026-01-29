@@ -54,7 +54,7 @@ def seed_transactions() -> None:
 
     Transaction.objects.update_or_create(
         account=checking,
-        posted_at=_aware_datetime(2024, 1, 15),
+        posted_at=_aware_datetime(2026, 1, 15),
         transaction_type=Transaction.TransactionType.INCOME,
         amount=Decimal("2000.00"),
         defaults={
@@ -65,7 +65,7 @@ def seed_transactions() -> None:
 
     Transaction.objects.update_or_create(
         account=checking,
-        posted_at=_aware_datetime(2024, 1, 20),
+        posted_at=_aware_datetime(2026, 1, 20),
         transaction_type=Transaction.TransactionType.EXPENSE,
         amount=Decimal("150.00"),
         defaults={
@@ -76,7 +76,7 @@ def seed_transactions() -> None:
 
     Transaction.objects.update_or_create(
         account=savings,
-        posted_at=_aware_datetime(2024, 1, 25),
+        posted_at=_aware_datetime(2026, 1, 25),
         transaction_type=Transaction.TransactionType.INCOME,
         amount=Decimal("50.00"),
         defaults={
@@ -87,7 +87,7 @@ def seed_transactions() -> None:
 
     Transaction.objects.update_or_create(
         account=savings,
-        posted_at=_aware_datetime(2024, 1, 28),
+        posted_at=_aware_datetime(2026, 1, 28),
         transaction_type=Transaction.TransactionType.EXPENSE,
         amount=Decimal("100.00"),
         defaults={
