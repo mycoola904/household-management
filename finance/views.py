@@ -1,3 +1,4 @@
+import json
 from calendar import monthrange
 from datetime import date, datetime, time
 
@@ -230,9 +231,15 @@ class TransactionCreateView(View):
 	def post(self, request, *args, **kwargs):
 		form = self.form_class(request.POST)
 		if form.is_valid():
-			form.save()
+			transaction = form.save()
+			account_id = transaction.account_id
 			response = HttpResponse(status=204)
-			response["HX-Trigger"] = "{\"transactionsChanged\": {}, \"closeAccountModal\": {}}"
+			response["HX-Trigger"] = json.dumps(
+				{
+					"transactionsChanged": {"accounts": [account_id]},
+					"closeAccountModal": {},
+				}
+			)
 			return response
 		context = {
 			"form": form,
@@ -261,11 +268,19 @@ class TransactionUpdateView(View):
 
 	def post(self, request, pk, *args, **kwargs):
 		transaction = self.get_object(pk)
+		old_account_id = transaction.account_id
 		form = self.form_class(request.POST, instance=transaction)
 		if form.is_valid():
-			form.save()
+			transaction = form.save()
+			account_ids = {old_account_id, transaction.account_id}
+			account_ids.discard(None)
 			response = HttpResponse(status=204)
-			response["HX-Trigger"] = "{\"transactionsChanged\": {}, \"closeAccountModal\": {}}"
+			response["HX-Trigger"] = json.dumps(
+				{
+					"transactionsChanged": {"accounts": list(account_ids)},
+					"closeAccountModal": {},
+				}
+			)
 			return response
 		context = {
 			"form": form,
@@ -291,7 +306,12 @@ class TransactionDeleteView(View):
 
 	def post(self, request, pk, *args, **kwargs):
 		transaction = self.get_object(pk)
+		account_id = transaction.account_id
 		transaction.delete()
 		response = HttpResponse(status=204)
-		response["HX-Trigger"] = "{\"transactionsChanged\": {}, \"closeAccountModal\": {}}"
+		payload = {
+			"transactionsChanged": {"accounts": [account_id] if account_id else []},
+			"closeAccountModal": {},
+		}
+		response["HX-Trigger"] = json.dumps(payload)
 		return response

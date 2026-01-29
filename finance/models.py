@@ -77,6 +77,8 @@ class Transaction(models.Model):
     class TransactionType(models.TextChoices):
         EXPENSE = "expense", "Expense"
         INCOME = "income", "Income"
+        CHARGE = "charge", "Charge"
+        PAYMENT = "payment", "Payment"
         TRANSFER = "transfer", "Transfer"
         ADJUSTMENT = "adjustment", "Adjustment"
 
@@ -103,8 +105,8 @@ class Transaction(models.Model):
 
     @property
     def signed_amount(self):
-        debit_types = {self.TransactionType.EXPENSE}
-        credit_types = {self.TransactionType.INCOME}
+        debit_types = {self.TransactionType.EXPENSE, self.TransactionType.PAYMENT}
+        credit_types = {self.TransactionType.INCOME, self.TransactionType.CHARGE}
         if self.transaction_type in debit_types:
             return -self.amount
         if self.transaction_type in credit_types:

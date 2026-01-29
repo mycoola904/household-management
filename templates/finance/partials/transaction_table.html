@@ -1,5 +1,10 @@
 {% load humanize %}
-<div id="account-transactions" class="space-y-4">
+<div id="account-transactions"
+    class="space-y-4"
+    hx-get="{{ transactions_url }}?month={{ current_month }}"
+    hx-trigger="transactionsChanged[event.detail && event.detail.accounts && event.detail.accounts.includes({{ account.pk }})] from:body"
+    hx-target="this"
+    hx-swap="outerHTML">
     <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
             <p class="text-xs uppercase text-base-content/60">Month</p>

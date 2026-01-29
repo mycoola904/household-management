@@ -82,11 +82,11 @@
             <h2 class="text-xl font-semibold">Transactions</h2>
             <span class="text-sm text-base-content/60">Current month by default</span>
         </div>
-        <div id="account-transactions"
-             hx-get="{{ transactions_url }}"
-             hx-trigger="load, transactionsChanged from:body"
-             hx-target="this"
-             hx-swap="outerHTML"></div>
+           <div id="account-transactions"
+               hx-get="{{ transactions_url }}"
+               hx-trigger="load, transactionsChanged[event.detail && event.detail.accounts && event.detail.accounts.includes({{ account.pk }})] from:body"
+               hx-target="this"
+               hx-swap="outerHTML"></div>
     </div>
 </div>
 <dialog id="account-modal" class="modal">
