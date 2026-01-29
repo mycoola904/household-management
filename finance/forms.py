@@ -1,6 +1,21 @@
 from django import forms
+from django.utils import timezone
 
-from .models import Account
+from .models import Account, Transaction
+
+
+def _apply_tailwind_classes(form):
+    widget_classes = {
+        "select": "select select-bordered",
+        "textarea": "textarea textarea-bordered",
+        "checkboxinput": "checkbox checkbox-sm",
+    }
+    for field in form.fields.values():
+        widget = field.widget
+        widget_type = widget.__class__.__name__.lower()
+        css_class = widget_classes.get(widget_type, "input input-bordered")
+        existing = widget.attrs.get("class", "")
+        widget.attrs["class"] = f"{existing} {css_class}".strip()
 
 
 class AccountForm(forms.ModelForm):
@@ -18,15 +33,7 @@ class AccountForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        widget_classes = {
-            "select": "select select-bordered",
-            "textarea": "textarea textarea-bordered",
-        }
-        for name, field in self.fields.items():
-            widget_type = field.widget.__class__.__name__.lower()
-            css_class = widget_classes.get(widget_type, "input input-bordered")
-            existing = field.widget.attrs.get("class", "")
-            field.widget.attrs["class"] = f"{existing} {css_class}".strip()
+        _apply_tailwind_classes(self)
 
         self.fields["interest_rate"].widget.attrs.update({"step": "0.01", "min": "0"})
         self.fields["balance"].widget.attrs.update({"step": "0.01"})
@@ -86,3 +93,40 @@ class AccountForm(forms.ModelForm):
             )
 
         return cleaned_data
+
+
+class TransactionForm(forms.ModelForm):
+    class Meta:
+        model = Transaction
+        fields = (
+            "account",
+            "transaction_type",
+            "amount",
+            "category",
+            "memo",
+            "reference",
+            "posted_at",
+            "is_cleared",
+        )
+        widgets = {
+            "posted_at": forms.DateTimeInput(
+                attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"
+            )
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _apply_tailwind_classes(self)
+        self.fields["amount"].widget.attrs.update({"step": "0.01", "min": "0"})
+
+        posted_at = self.initial.get("posted_at") or (
+            self.instance.posted_at if self.instance.pk else timezone.now()
+        )
+        if posted_at:
+            self.initial["posted_at"] = posted_at.strftime("%Y-%m-%dT%H:%M")
+
+    def clean_amount(self):
+        amount = self.cleaned_data.get("amount")
+        if amount is not None and amount <= 0:
+            raise forms.ValidationError("Amount must be greater than zero.")
+        return amount

@@ -1,0 +1,10 @@
+<form hx-post="{{ action }}" hx-target="#modal-body" hx-swap="innerHTML" class="space-y-4">
+    {% csrf_token %}
+    <h2 class="text-xl font-semibold">Delete Transaction</h2>
+    <p>Remove the transaction dated <strong>{{ transaction.posted_at|date:"M j, Y" }}</strong> for <strong>{{ transaction.account.name }}</strong>?</p>
+    <p class="text-base-content/70">This cannot be undone.</p>
+    <div class="modal-action">
+        <button type="button" class="btn btn-ghost" onclick="document.getElementById('account-modal').close(); document.getElementById('modal-body').innerHTML='';">Cancel</button>
+        <button type="submit" class="btn btn-error">Delete</button>
+    </div>
+</form>

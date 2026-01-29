@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 
 class Account(models.Model):
@@ -67,6 +68,55 @@ class Account(models.Model):
                 errors["due_date"] = "Due date is required for this account type."
         elif self.due_date:
             errors["due_date"] = "Due date is only allowed for credit card or loan accounts."
+
+        if errors:
+            raise ValidationError(errors)
+
+
+class Transaction(models.Model):
+    class TransactionType(models.TextChoices):
+        EXPENSE = "expense", "Expense"
+        INCOME = "income", "Income"
+        TRANSFER = "transfer", "Transfer"
+        ADJUSTMENT = "adjustment", "Adjustment"
+
+    account = models.ForeignKey(
+        Account,
+        on_delete=models.CASCADE,
+        related_name="transactions",
+    )
+    transaction_type = models.CharField(max_length=20, choices=TransactionType.choices)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    category = models.CharField(max_length=100, blank=True)
+    memo = models.CharField(max_length=255, blank=True)
+    reference = models.CharField(max_length=100, blank=True)
+    posted_at = models.DateTimeField(default=timezone.now)
+    is_cleared = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-posted_at", "-id"]
+
+    def __str__(self) -> str:
+        return f"{self.get_transaction_type_display()} {self.amount} for {self.account.name}"
+
+    @property
+    def signed_amount(self):
+        debit_types = {self.TransactionType.EXPENSE}
+        credit_types = {self.TransactionType.INCOME}
+        if self.transaction_type in debit_types:
+            return -self.amount
+        if self.transaction_type in credit_types:
+            return self.amount
+        # transfers & adjustments treated as positive value; caller decides how to display
+        return self.amount
+
+    def clean(self) -> None:
+        super().clean()
+        errors = {}
+        if self.amount is None or self.amount <= 0:
+            errors["amount"] = "Amount must be greater than zero."
 
         if errors:
             raise ValidationError(errors)

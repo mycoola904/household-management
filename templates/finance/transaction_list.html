@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Transactions · Household{% endblock %}
+{% block content %}
+<div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-semibold">Transactions</h1>
+        <p class="text-base-content/70">Track account activity and keep balances up to date.</p>
+    </div>
+    <div class="flex gap-3">
+        <select id="transaction-account-filter"
+            name="account"
+            class="select select-bordered"
+            hx-get="{% url 'finance:transaction-list' %}"
+            hx-target="#transaction-rows"
+            hx-swap="innerHTML"
+            hx-trigger="change"
+            hx-include="#transaction-filter">
+            <option value="">All accounts</option>
+            {% for account in accounts %}
+                <option value="{{ account.id }}" {% if account.id|stringformat:'s' == selected_account %}selected{% endif %}>
+                    {{ account.name }}
+                </option>
+            {% endfor %}
+        </select>
+        <button type="button"
+                class="btn"
+                onclick="document.getElementById('transaction-account-filter').value=''; htmx.trigger('#transaction-account-filter','change');">
+            Clear Filter
+        </button>
+        <button class="btn btn-primary"
+                hx-get="{% url 'finance:transaction-create' %}{% if selected_account %}?account={{ selected_account }}{% endif %}"
+                hx-target="#modal-body"
+                hx-swap="innerHTML">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                <path fill-rule="evenodd" d="M12 4.5a.75.75 0 01.75.75v6h6a.75.75 0 010 1.5h-6v6a.75.75 0 01-1.5 0v-6h-6a.75.75 0 010-1.5h6v-6A.75.75 0 0112 4.5z" clip-rule="evenodd" />
+            </svg>
+            New Transaction
+        </button>
+    </div>
+</div>
+<div class="overflow-x-auto bg-base-100 rounded-box shadow">
+    <table class="table table-zebra">
+        <thead>
+            <tr class="text-sm uppercase text-base-content/70">
+                <th>Date</th>
+                <th>Account</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th class="text-right">Amount</th>
+                <th>Status</th>
+                <th class="text-right">Actions</th>
+            </tr>
+        </thead>
+         <tbody id="transaction-rows"
+             hx-get="{% url 'finance:transaction-list' %}{% if selected_account %}?account={{ selected_account }}{% endif %}"
+               hx-target="this"
+               hx-swap="innerHTML"
+               hx-trigger="load, transactionsChanged from:body"
+               hx-include="#transaction-filter">
+            {% include "finance/partials/transaction_rows.html" %}
+        </tbody>
+    </table>
+</div>
+<dialog id="account-modal" class="modal">
+    <div class="modal-box w-11/12 max-w-2xl" id="modal-body"></div>
+    <form method="dialog" class="modal-backdrop">
+        <button>Close</button>
+    </form>
+</dialog>
+<form id="transaction-filter" class="hidden">
+    <input type="hidden" name="account" value="{{ selected_account }}">
+</form>
+<script>
+    const accountModal = document.getElementById('account-modal');
+    document.addEventListener('htmx:afterSwap', function (event) {
+        if (event.target.id === 'modal-body') {
+            accountModal.showModal();
+        }
+    });
+    document.addEventListener('closeAccountModal', function () {
+        if (accountModal.open) {
+            accountModal.close();
+        }
+        document.getElementById('modal-body').innerHTML = '';
+    });
+    accountModal.addEventListener('close', function () {
+        document.getElementById('modal-body').innerHTML = '';
+    });
+    document.getElementById('transaction-account-filter').addEventListener('change', function () {
+        const hidden = document.querySelector('#transaction-filter input[name="account"]');
+        hidden.value = this.value;
+    });
+</script>
+{% endblock %}

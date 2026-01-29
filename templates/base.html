@@ -24,15 +24,19 @@
         });
     </script>
 </head>
-<body class="min-h-screen bg-base-200 text-base-content" hx-boost="true">
-    <header class="navbar bg-base-100 shadow">
+<body class="min-h-screen bg-base-200 text-base-content">
+    <header class="navbar bg-base-100 shadow sticky top-0 z-50">
         <div class="flex-1">
             <a href="/" class="btn btn-ghost text-xl">Household</a>
         </div>
-        <nav class="hidden md:flex gap-2 mr-4">
-            <a href="/finance/accounts/" class="btn btn-ghost btn-sm">Accounts</a>
-        </nav>
         <div class="flex-none gap-2">
+            <div class="dropdown dropdown-end">
+                <div tabindex="0" role="button" class="btn btn-ghost btn-sm">Finance ▾</div>
+                <ul tabindex="0" class="menu dropdown-content bg-base-100 rounded-box shadow p-2 mt-3 w-52 !z-[9999]">
+                    <li><a href="/finance/accounts/">Accounts</a></li>
+                    <li><a href="/finance/transactions/">Transactions</a></li>
+                </ul>
+            </div>
             {% if request.user.is_authenticated %}
                 <span class="hidden sm:inline">Hello, {{ request.user.first_name|default:request.user.username }}</span>
                 <a href="/admin/logout/" class="btn btn-sm btn-outline">Sign out</a>
