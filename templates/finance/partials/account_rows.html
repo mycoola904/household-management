@@ -2,7 +2,9 @@
 {% for account in accounts %}
 <tr id="account-{{ account.id }}" class="hover">
     <td class="align-top">
-        <div class="font-medium">{{ account.name }}</div>
+        <a href="{% url 'finance:account-detail' account.pk %}" class="font-medium link link-hover">
+            {{ account.name }}
+        </a>
         <div class="text-sm text-base-content/60">{{ account.account_number }}</div>
     </td>
     <td class="capitalize align-top">{{ account.get_account_type_display }}</td>

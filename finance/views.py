@@ -1,6 +1,10 @@
+from calendar import monthrange
+from datetime import date, datetime, time
+
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views import View
 
 from .forms import AccountForm, TransactionForm
@@ -100,6 +104,83 @@ class AccountDeleteView(View):
 		response = HttpResponse(status=204)
 		response["HX-Trigger"] = "{\"accountsChanged\": {}, \"closeAccountModal\": {}}"
 		return response
+
+
+class AccountDetailView(View):
+	template_name = "finance/account_detail.html"
+
+	def get(self, request, pk, *args, **kwargs):
+		account = get_object_or_404(Account, pk=pk)
+		routing_types = {
+			Account.AccountType.CHECKING,
+			Account.AccountType.SAVINGS,
+		}
+		interest_types = {
+			Account.AccountType.SAVINGS,
+			Account.AccountType.CREDIT_CARD,
+			Account.AccountType.LOAN,
+		}
+		due_date_types = {
+			Account.AccountType.CREDIT_CARD,
+			Account.AccountType.LOAN,
+		}
+		context = {
+			"account": account,
+			"transactions_url": reverse("finance:account-transactions", args=[account.pk]),
+			"show_routing": account.account_type in routing_types,
+			"show_interest": account.account_type in interest_types,
+			"show_due_date": account.account_type in due_date_types,
+		}
+		return render(request, self.template_name, context)
+
+
+class AccountTransactionTableView(View):
+	template_name = "finance/partials/transaction_table.html"
+
+	def _resolve_month(self, request):
+		month_param = request.GET.get("month")
+		default_month = timezone.localdate().replace(day=1)
+		if month_param:
+			try:
+				year_str, month_str = month_param.split("-")
+				return date(int(year_str), int(month_str), 1)
+			except (ValueError, TypeError):
+				return default_month
+		return default_month
+
+	def _month_bounds(self, first_day: date):
+		last_day = monthrange(first_day.year, first_day.month)[1]
+		end_day = date(first_day.year, first_day.month, last_day)
+		tz = timezone.get_current_timezone()
+		start_dt = timezone.make_aware(datetime.combine(first_day, time.min), tz)
+		end_dt = timezone.make_aware(datetime.combine(end_day, time.max), tz)
+		return start_dt, end_dt
+
+	def _shift_month(self, first_day: date, delta: int) -> date:
+		month_index = first_day.month - 1 + delta
+		year = first_day.year + month_index // 12
+		month = month_index % 12 + 1
+		return date(year, month, 1)
+
+	def get(self, request, pk, *args, **kwargs):
+		account = get_object_or_404(Account, pk=pk)
+		current_month = self._resolve_month(request)
+		start_dt, end_dt = self._month_bounds(current_month)
+		transactions = (
+			Transaction.objects.select_related("account")
+			.filter(account=account, posted_at__range=(start_dt, end_dt))
+			.order_by("-posted_at", "-id")
+		)
+		context = {
+			"account": account,
+			"transactions": transactions,
+			"month_label": current_month.strftime("%B %Y"),
+			"current_month": current_month.strftime("%Y-%m"),
+			"prev_month": self._shift_month(current_month, -1).strftime("%Y-%m"),
+			"next_month": self._shift_month(current_month, 1).strftime("%Y-%m"),
+			"transactions_url": reverse("finance:account-transactions", args=[account.pk]),
+		}
+		return render(request, self.template_name, context)
 
 
 class TransactionListView(View):
