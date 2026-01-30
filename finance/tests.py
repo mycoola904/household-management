@@ -7,7 +7,18 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import Account, Transaction
+from .forms import TransactionForm
+from .models import Account, Category, Transaction
+
+class CategoryModelTests(TestCase):
+	def test_slug_normalization_and_uniqueness(self):
+		"""Slug is normalized, trimmed, and remains unique with suffixes."""
+		base = Category.objects.create(name="  Groceries  ")
+		duplicate = Category.objects.create(name="Groceries")
+
+		self.assertEqual(base.slug, "groceries")
+		self.assertTrue(duplicate.slug.startswith("groceries"))
+		self.assertNotEqual(base.slug, duplicate.slug)
 
 
 class AccountModelTests(TestCase):
@@ -76,6 +87,7 @@ class AccountModelTests(TestCase):
 
 class TransactionModelTests(TestCase):
 	def setUp(self):
+		self.category = Category.objects.create(name="General")
 		self.account = Account.objects.create(
 			name="Checking",
 			account_number="CHK-100",
@@ -90,16 +102,19 @@ class TransactionModelTests(TestCase):
 			account=self.account,
 			transaction_type=Transaction.TransactionType.EXPENSE,
 			amount=Decimal("42.00"),
+			category=self.category,
 		)
 		income = Transaction(
 			account=self.account,
 			transaction_type=Transaction.TransactionType.INCOME,
 			amount=Decimal("42.00"),
+			category=self.category,
 		)
 		transfer = Transaction(
 			account=self.account,
 			transaction_type=Transaction.TransactionType.TRANSFER,
 			amount=Decimal("42.00"),
+			category=self.category,
 		)
 
 		self.assertEqual(expense.signed_amount, Decimal("-42.00"))
@@ -112,6 +127,7 @@ class TransactionModelTests(TestCase):
 			account=self.account,
 			transaction_type=Transaction.TransactionType.EXPENSE,
 			amount=Decimal("0"),
+			category=self.category,
 		)
 
 		with self.assertRaises(ValidationError) as ctx:
@@ -122,6 +138,7 @@ class TransactionModelTests(TestCase):
 
 class TransactionListViewTests(TestCase):
 	def setUp(self):
+		self.category = Category.objects.create(name="General")
 		self.account_one = Account.objects.create(
 			name="Primary Checking",
 			account_number="CHK-1",
@@ -142,11 +159,13 @@ class TransactionListViewTests(TestCase):
 			account=self.account_one,
 			transaction_type=Transaction.TransactionType.EXPENSE,
 			amount=Decimal("50.00"),
+			category=self.category,
 		)
 		self.transaction_two = Transaction.objects.create(
 			account=self.account_two,
 			transaction_type=Transaction.TransactionType.INCOME,
 			amount=Decimal("400.00"),
+			category=self.category,
 		)
 
 	def test_filters_by_account_id(self):
@@ -166,3 +185,43 @@ class TransactionListViewTests(TestCase):
 		transactions = set(response.context["transactions"])
 		self.assertEqual(transactions, {self.transaction_one, self.transaction_two})
 		self.assertEqual(response.context["selected_account"], "")
+
+
+class TransactionFormTests(TestCase):
+	def setUp(self):
+		self.category = Category.objects.create(name="General")
+		self.inactive_category = Category.objects.create(name="Archive", is_active=False)
+		self.checking = Account.objects.create(
+			name="Checking",
+			account_number="CHK-200",
+			account_type=Account.AccountType.CHECKING,
+			routing_number="111000111",
+			balance=Decimal("500.00"),
+		)
+		self.credit = Account.objects.create(
+			name="Credit",
+			account_number="CC-200",
+			account_type=Account.AccountType.CREDIT_CARD,
+			interest_rate=Decimal("19.99"),
+			due_date=date(2026, 2, 1),
+			balance=Decimal("0.00"),
+		)
+
+	def test_credit_account_limits_transaction_types(self):
+		"""Credit accounts only expose payment/charge transaction types."""
+		form = TransactionForm(initial={"account": self.credit.pk})
+		choices = {value for value, _label in form.fields["transaction_type"].choices}
+		self.assertEqual(
+			choices,
+			{
+				Transaction.TransactionType.CHARGE,
+				Transaction.TransactionType.PAYMENT,
+			},
+		)
+
+	def test_category_field_excludes_inactive_entries(self):
+		"""Inactive categories are hidden from the dropdown options."""
+		form = TransactionForm()
+		category_ids = [cat.id for cat in form.fields["category"].queryset]
+		self.assertIn(self.category.id, category_ids)
+		self.assertNotIn(self.inactive_category.id, category_ids)

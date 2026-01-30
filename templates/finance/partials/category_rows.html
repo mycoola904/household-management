@@ -1,47 +1,22 @@
-{% load humanize %}
-{% for transaction in transactions %}
-<tr class="hover" id="transaction-{{ transaction.id }}">
+{% for category in categories %}
+<tr id="category-{{ category.id }}" data-category-rows>
     <td class="align-top">
-        <div class="font-medium">{{ transaction.posted_at|date:"M j, Y" }}</div>
-        <div class="text-xs text-base-content/60">{{ transaction.posted_at|date:"P" }}</div>
+        <div class="font-medium">{{ category.name }}</div>
+        <div class="text-xs text-base-content/60">Created {{ category.created_at|date:"M j, Y" }}</div>
     </td>
+    <td class="align-top font-mono text-sm">{{ category.slug }}</td>
     <td class="align-top">
-        <div class="font-medium">{{ transaction.account.name }}</div>
-        <div class="text-xs text-base-content/60">{{ transaction.account.get_account_type_display }}</div>
-    </td>
-    <td class="align-top">
-        <span class="badge badge-outline">{{ transaction.get_transaction_type_display }}</span>
-        {% if transaction.category %}
-            <div class="text-xs text-base-content/60 mt-1">{{ transaction.category.name }}</div>
-        {% endif %}
-    </td>
-    <td class="align-top">
-        {% if transaction.memo %}
-            <div>{{ transaction.memo }}</div>
-        {% endif %}
-        {% if transaction.reference %}
-            <div class="text-xs text-base-content/60">Ref: {{ transaction.reference }}</div>
-        {% endif %}
-    </td>
-    <td class="text-right align-top">
-        {% with signed=transaction.signed_amount %}
-            <span class="font-mono {% if signed < 0 %}text-error{% else %}text-success{% endif %}">
-                {% if signed > 0 %}+{% endif %}${{ signed|floatformat:2|intcomma }}
-            </span>
-        {% endwith %}
-    </td>
-    <td class="align-top">
-        {% if transaction.is_cleared %}
-            <span class="badge badge-success badge-sm">Cleared</span>
+        {% if category.is_active %}
+            <span class="badge badge-success badge-sm">Active</span>
         {% else %}
-            <span class="badge badge-outline badge-sm">Pending</span>
+            <span class="badge badge-outline badge-sm">Inactive</span>
         {% endif %}
     </td>
     <td class="align-top">
         <div class="flex justify-end gap-2">
             <button class="btn btn-ghost btn-sm btn-square"
                     title="Edit"
-                    hx-get="{% url 'finance:transaction-update' transaction.pk %}"
+                    hx-get="{% url 'finance:category-update' category.pk %}"
                     hx-target="#modal-body"
                     hx-swap="innerHTML">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
@@ -51,7 +26,7 @@
             </button>
             <button class="btn btn-ghost btn-sm btn-square text-error"
                     title="Delete"
-                    hx-get="{% url 'finance:transaction-delete' transaction.pk %}"
+                    hx-get="{% url 'finance:category-delete' category.pk %}"
                     hx-target="#modal-body"
                     hx-swap="innerHTML">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
@@ -63,6 +38,6 @@
 </tr>
 {% empty %}
 <tr>
-    <td colspan="7" class="text-center py-10 text-base-content/60">No transactions recorded yet.</td>
+    <td colspan="4" class="text-center py-10 text-base-content/60">No categories yet. Create one to organize transactions.</td>
 </tr>
 {% endfor %}

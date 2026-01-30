@@ -1,7 +1,7 @@
 from django import forms
 from django.utils import timezone
 
-from .models import Account, Transaction
+from .models import Account, Category, Transaction
 
 
 def _apply_tailwind_classes(form):
@@ -127,6 +127,9 @@ class TransactionForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         _apply_tailwind_classes(self)
         self.fields["amount"].widget.attrs.update({"step": "0.01", "min": "0"})
+        self.fields["category"].queryset = self._category_queryset()
+        self.fields["category"].empty_label = "Select category"
+        self.fields["category"].widget.attrs.setdefault("data-category-select", "true")
         self._limit_transaction_type_choices()
 
         posted_at = self.initial.get("posted_at") or (
@@ -166,6 +169,9 @@ class TransactionForm(forms.ModelForm):
             raise forms.ValidationError("Amount must be greater than zero.")
         return amount
 
+    def _category_queryset(self):
+        return Category.objects.filter(is_active=True).order_by("name")
+
     def clean(self):
         cleaned_data = super().clean()
         account = cleaned_data.get("account")
@@ -181,3 +187,17 @@ class TransactionForm(forms.ModelForm):
                 "Credit card and loan accounts support only Payment or Charge transactions.",
             )
         return cleaned_data
+
+
+class CategoryForm(forms.ModelForm):
+    class Meta:
+        model = Category
+        fields = ("name", "is_active")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _apply_tailwind_classes(self)
+
+    def clean_name(self):
+        name = self.cleaned_data.get("name", "")
+        return " ".join(name.split())

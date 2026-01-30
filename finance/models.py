@@ -1,6 +1,33 @@
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
+from django.utils.text import slugify
+
+
+class Category(models.Model):
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=120, unique=True, editable=False)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if self.name:
+            self.name = " ".join(self.name.split())
+        base_slug = slugify(self.name or "category") or "category"
+        slug = base_slug
+        counter = 2
+        while Category.objects.exclude(pk=self.pk).filter(slug=slug).exists():
+            slug = f"{base_slug}-{counter}"
+            counter += 1
+        self.slug = slug
+        super().save(*args, **kwargs)
 
 
 class Account(models.Model):
@@ -89,7 +116,11 @@ class Transaction(models.Model):
     )
     transaction_type = models.CharField(max_length=20, choices=TransactionType.choices)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
-    category = models.CharField(max_length=100, blank=True)
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.PROTECT,
+        related_name="transactions",
+    )
     memo = models.CharField(max_length=255, blank=True)
     reference = models.CharField(max_length=100, blank=True)
     posted_at = models.DateTimeField(default=timezone.now)

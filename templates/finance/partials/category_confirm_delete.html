@@ -1,0 +1,18 @@
+<form hx-post="{{ action }}"
+      hx-target="#modal-body"
+      hx-swap="innerHTML"
+      class="space-y-4">
+    {% csrf_token %}
+    <h2 class="text-xl font-semibold">Delete Category</h2>
+    {% if error %}
+        <div class="alert alert-error">{{ error }}</div>
+    {% else %}
+        <p>Are you sure you want to delete <strong>{{ category.name }}</strong>? This action cannot be undone.</p>
+    {% endif %}
+    <div class="modal-action">
+        <button type="button" class="btn" onclick="document.getElementById('account-modal').close(); document.getElementById('modal-body').innerHTML='';">Cancel</button>
+        {% if not error %}
+            <button type="submit" class="btn btn-error">Delete</button>
+        {% endif %}
+    </div>
+</form>
