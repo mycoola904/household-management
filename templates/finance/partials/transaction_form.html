@@ -18,6 +18,25 @@
                         {{ field }}
                         <span class="label-text">{{ field.label }}</span>
                     </label>
+                {% elif field.name == "category" %}
+                    <label class="label" for="{{ field.id_for_label }}">
+                        <span class="label-text">{{ field.label }}</span>
+                    </label>
+                    <div class="flex flex-col gap-2">
+                        <div class="flex gap-2">
+                            <div class="flex-1">
+                                {{ field }}
+                            </div>
+                            <button type="button"
+                                    class="btn btn-outline btn-sm"
+                                    hx-get="{% url 'finance:category-create' %}?inline=1&select_id={{ field.id_for_label }}"
+                                    hx-target="#{{ field.id_for_label }}-inline-form"
+                                    hx-swap="innerHTML">
+                                Add Category
+                            </button>
+                        </div>
+                        <div id="{{ field.id_for_label }}-inline-form"></div>
+                    </div>
                 {% else %}
                     <label class="label" for="{{ field.id_for_label }}">
                         <span class="label-text">{{ field.label }}</span>
@@ -44,3 +63,50 @@
         <button type="submit" class="btn btn-primary">Save</button>
     </div>
 </form>
+<script>
+    if (!window.__categoryDropdownHandler) {
+        window.__categoryDropdownHandler = true;
+        document.addEventListener('categoriesChanged', function (event) {
+            const detail = event.detail || {};
+            const selects = document.querySelectorAll('[data-category-select="true"]');
+            if (detail.action === 'deleted') {
+                selects.forEach((select) => {
+                    const option = Array.from(select.options).find((opt) => opt.value === String(detail.id));
+                    if (option) {
+                        option.remove();
+                    }
+                });
+                return;
+            }
+            const selectId = detail.selectId;
+            if (!selectId) {
+                selects.forEach((select) => {
+                    let option = Array.from(select.options).find((opt) => opt.value === String(detail.id));
+                    if (!option) {
+                        option = document.createElement('option');
+                        option.value = detail.id;
+                        select.appendChild(option);
+                    }
+                    option.textContent = detail.name;
+                });
+                return;
+            }
+            const select = document.getElementById(selectId);
+            if (!select) {
+                return;
+            }
+            let option = Array.from(select.options).find((opt) => opt.value === String(detail.id));
+            if (!option) {
+                option = document.createElement('option');
+                option.value = detail.id;
+                select.appendChild(option);
+            }
+            option.textContent = detail.name;
+            select.value = String(detail.id);
+            const slot = document.getElementById(`${selectId}-inline-form`);
+            if (slot) {
+                slot.innerHTML = '';
+            }
+        });
+    }
+</script>
